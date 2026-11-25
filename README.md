@@ -39,15 +39,22 @@ discovery, message delivery, and synchronization when online.
    supabase functions deploy send-message-push
    ```
 
-5. Link the app to EAS and rebuild the native app so Expo can issue push tokens:
+5. Link the app to EAS and configure platform push credentials. Android builds
+   need an FCM v1 service-account key; iOS builds need an APNs key. Add these
+   through EAS credentials—never commit the credential files:
 
    ```bash
    npx eas-cli@latest init
+   npx eas-cli@latest credentials
    ```
 
-   Keep the generated EAS project ID in the Expo app configuration and configure
-   APNs/FCM credentials for the EAS build. Push notifications are not supported
-   in the browser preview.
+   Build and install a native preview on a physical device to test push alerts:
+
+   ```bash
+   npx eas-cli@latest build --profile preview --platform android
+   ```
+
+   Remote push notifications do not work in the browser preview or Expo Go.
 6. Deploy story cleanup, add a private `STORY_CLEANUP_SECRET`, then use Supabase
    Cron with the `pg_net` extension enabled to POST to the function URL every 10
    minutes. Set the request's `Authorization` header to
