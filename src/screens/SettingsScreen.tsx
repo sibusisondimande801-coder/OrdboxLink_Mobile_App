@@ -379,6 +379,9 @@ export function SettingsScreen() {
     { section: 'notifications', title: 'Notifications', detail: 'Message alerts', icon: 'notifications-outline' },
     { section: 'local-data', title: 'Local messages', detail: 'Messages on this device', icon: 'phone-portrait-outline' },
   ] as const;
+  const visibleSettingsRows = settingsRows.filter(
+    (row) => row.section !== 'notifications' || Platform.OS === 'android',
+  );
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -405,7 +408,7 @@ export function SettingsScreen() {
             {photoError ? <Text style={styles.warning}>{photoError}</Text> : null}
           </View>
         </View>
-        {settingsRows.map((row) => (
+        {visibleSettingsRows.map((row) => (
           <Pressable key={row.section} style={styles.row} onPress={() => setSection(row.section)}>
             <View style={styles.rowIcon}>
               <Ionicons name={row.icon} size={20} color={colors.red} />

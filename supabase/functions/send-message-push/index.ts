@@ -68,7 +68,10 @@ Deno.serve(async (request) => {
 
   const [{ data: sender, error: senderError }, { data: tokens, error: tokenError }] = await Promise.all([
     admin.from('profiles').select('username').eq('id', message.sender_id).maybeSingle(),
-    admin.from('notification_tokens').select('expo_push_token').eq('user_id', message.recipient_id),
+    admin.from('notification_tokens')
+      .select('expo_push_token')
+      .eq('user_id', message.recipient_id)
+      .eq('platform', 'android'),
   ]);
   if (senderError || tokenError) return respond({ error: 'Push recipients could not be loaded.' }, 500);
   if (!tokens?.length) return respond({ sent: 0 });

@@ -4,8 +4,8 @@ import * as Notifications from 'expo-notifications';
 import { getSupabaseClient } from './supabase';
 
 export async function registerPushToken(userId: string): Promise<void> {
-  if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
-    throw new Error('Push notifications are available in the installed iOS or Android app.');
+  if (Platform.OS !== 'android') {
+    throw new Error('Push notifications are available in the installed Android app only.');
   }
   const projectId = Constants.easConfig?.projectId ?? Constants.expoConfig?.extra?.eas?.projectId;
   if (!projectId) {
@@ -29,7 +29,7 @@ export async function registerPushToken(userId: string): Promise<void> {
     {
       user_id: userId,
       expo_push_token: tokenData,
-      platform: Platform.OS,
+      platform: 'android',
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'expo_push_token' },
