@@ -1,97 +1,122 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# OrdboxLink
 
-# Getting Started
+OrdboxLink is an offline-first Expo app by Ordbox Tech for account-based,
+end-to-end encrypted messaging. SQLite stores conversations locally and queues
+messages when the network is unavailable. Supabase provides accounts, user
+discovery, message delivery, and synchronization when online.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Requirements
 
-## Step 1: Start Metro
+- Node.js 22.11 or newer and npm
+- A Supabase project
+- Android Studio and Android SDK for Android development builds
+- macOS, Xcode, and CocoaPods for iOS development builds
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Supabase setup
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+1. Enable email/password authentication and turn off **Confirm email** for the
+   Email provider in the Supabase project's Auth settings. Immediate registration
+   is controlled by this project setting, not by the app.
+2. Apply all migrations in `supabase/migrations/` using the Supabase SQL editor
+   or Supabase CLI. They create messaging, contacts and private nicknames,
+   per-user conversation deletion, public profile display names, stories,
+   notifications, message edit/delete, and private media storage policies.
+   Your display name is shown to contacts unless they set a private nickname;
+   deleting a conversation hides it only for you and preserves the other
+   person's copy. The latest story migration disables soundtrack uploads and
+   access while allowing cleanup of soundtrack files attached to older stories.
+3. Copy `.env.example` to `.env` and set the project's URL and public anon key:
 
-```sh
-# Using npm
-npm start
+   ```dotenv
+   EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_KEY
+   ```
 
-# OR using Yarn
-yarn start
-```
+   Do not put a service-role key in the app.
+4. Deploy the push sender:
 
-## Step 2: Build and run your app
+   ```bash
+   supabase functions deploy send-message-push
+   ```
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+5. Link the app to EAS and rebuild the native app so Expo can issue push tokens:
 
-### Android
+   ```bash
+   npx eas-cli@latest init
+   ```
 
-```sh
-# Using npm
+   Keep the generated EAS project ID in the Expo app configuration and configure
+   APNs/FCM credentials for the EAS build. Push notifications are not supported
+   in the browser preview.
+6. Deploy story cleanup, add a private `STORY_CLEANUP_SECRET`, then use Supabase
+   Cron with the `pg_net` extension enabled to POST to the function URL every 10
+   minutes. Set the request's `Authorization` header to
+   `Bearer <STORY_CLEANUP_SECRET>`:
+
+   ```bash
+   supabase functions deploy cleanup-expired-stories --no-verify-jwt
+   supabase secrets set STORY_CLEANUP_SECRET="<random secret>"
+   ```
+
+   The function removes expired story files, any soundtrack files attached to
+   older stories, and legacy video stories before deleting their rows. Photo
+   stories are hidden as soon as they expire and are physically cleaned up
+   after 24 hours.
+
+## Install and run
+
+```bash
+npm install
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+For the VS Code browser-based mobile preview, run `npm run web -- --port 8082`
+and open `http://localhost:8082`.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+For iOS, run `npm run ios` on macOS after installing dependencies. The app uses
+native SQLite, SecureStore, biometric authentication, and notification modules;
+rebuild and reinstall the native app after adding or changing native modules.
+Restarting Metro alone does not update an installed native app.
+Stories accept photos only, with optional captions. Story music is not supported.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Messaging and limitations
 
-```sh
-bundle install
+Create an account with a unique username, then search for another username to
+start a conversation. Messages are encrypted on the device for the sender and
+recipient. Offline sends are saved in SQLite and retried after connectivity
+returns. Photos, documents, and voice notes are end-to-end encrypted before upload.
+Photos and documents are limited to 10 MB; voice notes are limited to 5 MB and
+two minutes. Attachment uploads require an internet connection; downloaded or
+successfully sent attachments are cached encrypted for offline reopening. Text
+messages can be queued offline. Voice notes display their recording length and
+support 1x, 1.5x, and 2x playback. Chats show live typing status. Photo stories
+support photos up to 10 MB and optional captions. They expire after 24 hours and
+can be opened full-screen,
+swiped right to advance, reacted to, and answered with a message. Story owners
+can see their viewer list and view/reaction counts. Settings include profile
+photos, ten colour palettes including monochrome, pink/plum, orchid, sky, lime,
+and cocoa/sand, discoverability, blocking, message expiry, biometric locking,
+notification preferences, and local history clearing.
+The login screen's **Remember me** option is enabled by default. Turning it off
+keeps the session only for the current app run and does not restore the signed-in
+profile after the app is closed.
+
+Encryption keys are generated and kept in the device's secure storage. There is
+currently no key recovery or multi-device key transfer; losing app data or
+changing devices can make old encrypted messages unreadable. Push delivery
+requires the deployed sender function and an EAS project ID. Push alerts do not
+include message contents. The Supabase project must be configured and all
+migrations applied for account-based, cross-device messaging and message
+edit/delete to work.
+In the browser preview, encryption keys are encrypted with Web Crypto and stored
+in IndexedDB; this is not equivalent to native OS secure storage. Biometrics and
+native push notifications are unavailable in the browser preview.
+
+## Validation
+
+```bash
+npm run typecheck
+npm run lint
+npm test -- --runInBand
+npx expo-doctor
 ```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.

@@ -1,4 +1,40 @@
 {
-  "name": "MzansiLink",
-  "displayName": "MzansiLink"
+  "expo": {
+    "name": "OrdboxLink",
+    "slug": "mzansilink",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "android": {
+      "package": "com.mzansilink.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#101C2C"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.mzansilink.app"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-secure-store",
+      "expo-notifications",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow OrdboxLink to record voice notes."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow OrdboxLink to share photos and stories.",
+          "cameraPermission": false
+        }
+      ],
+      "expo-video",
+      "expo-sharing"
+    ]
+  }
 }

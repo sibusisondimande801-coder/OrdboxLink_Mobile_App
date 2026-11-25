@@ -1,11 +1,21 @@
-const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
 
-/**
- * Metro configuration
- * https://reactnative.dev/docs/metro
- *
- * @type {import('@react-native/metro-config').MetroConfig}
- */
-const config = {};
+const config = getDefaultConfig(__dirname);
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+if (!config.resolver.assetExts.includes('wasm')) {
+  config.resolver.assetExts.push('wasm');
+}
+
+const enhanceMiddleware = config.server.enhanceMiddleware;
+config.server.enhanceMiddleware = (middleware, metroServer) => {
+  const enhancedMiddleware = enhanceMiddleware
+    ? enhanceMiddleware(middleware, metroServer)
+    : middleware;
+  return (req, res, next) => {
+    res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    return enhancedMiddleware(req, res, next);
+  };
+};
+
+module.exports = config;
